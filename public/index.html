@@ -684,11 +684,7 @@ ${conversationText}
                 authToggleBtn.disabled = false;
                 menuBtn.classList.remove("hidden");
 
-                if (userInfoStatusSpan) {
-                    userInfoStatusSpan.classList.remove('hidden');
-                    const displayId = userEmail ? userEmail : (userId ? `${userId.substring(0, 8)}...` : 'Unknown');
-                    userInfoStatusSpan.textContent = `User: ${displayId} (Student)`;
-                }
+                
 
             } else {
                 googleLoginWrapper.classList.remove('hidden');
@@ -697,12 +693,7 @@ ${conversationText}
                 menuBtn.classList.add("hidden");
 
                 if (userInfoStatusSpan) {
-                    if (userId) {
-                        userInfoStatusSpan.textContent = `User: ${userId.substring(0, 8)}... (Public)`;
-                    } else {
-                        userInfoStatusSpan.textContent = 'Auth Loading...';
-                    }
-                    userInfoStatusSpan.classList.remove('hidden');
+                    
                 }
             }
             updateStatusBadge();
@@ -801,11 +792,42 @@ ${conversationText}
                         `🎓 学生ログイン成功！\n${email} で認証されました。`,
                         "bot"
                     );
-                    await fetch("/api/link-line", {
+                    addMessage(
+  "ℹ️ **Important notice (Beta)**\n\n" +
+  "- LINE must be connected to receive reminders\n" +
+  "- Reminder notifications may be delayed by a few minutes\n" +
+  "- Please double-check important schedules\n\n" +
+  "This system is currently in testing.",
+  "bot"
+
+ "ℹ️ **ご注意（テスト版）**\n\n" +
+  "- リマインダーには LINE 連携が必要です\n" +
+  "- 通知は数分遅れる場合があります\n" +
+  "- 重要な予定は必ず再確認してください",
+  "bot"
+
+
+);
+
+                    const res = await fetch("/api/request-line-token", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ email: userEmail })
-});addMessage("🔗 LINE account linked successfully", "bot");
+});
+
+const data = await res.json();
+if (!data.linked) {
+  addMessage(
+    "⚠️ LINE is not connected yet.\nPlease connect LINE before using reminders.",
+    "bot"
+  );
+}                    
+
+addMessage(
+  `📱 LINE連携コードを発行しました。\n\nLINEで次を送信してください：\n\n**LINK ${data.code}**`,
+  "bot"
+);
+
 
                     
 
@@ -999,7 +1021,10 @@ The current local time at KOBEDENSHI College (Kobe, Japan) is **${timeStr}** on 
                     const scheduleKeywords = ["exam", "test", "class", "meeting", "tomorrow", "am", "pm"];
 
                     if (scheduleKeywords.some(k => trimmedQuery.toLowerCase().includes(k))) {
-                        const fakeISO = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+                         addMessage(
+  "🕒 I found a schedule.\nPlease tell me the exact date and time.\nExample: 2025-01-20 10:00",
+  "bot"
+);
 
                         addReminderConfirm(aiText, fakeISO);
                     }
