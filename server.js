@@ -7,7 +7,8 @@ import admin from "firebase-admin";
 import cron from "node-cron";
 
 // 1. DATABASE INITIALIZATION
-import serviceAccount from "./serviceAccount.json" assert { type: "json" };
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
