@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Kyaw | AI Engineer & IT Student</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#030712',
+                        lightBg: '#f8fafc',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            touch-action: manipulation;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .dark .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .profile-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+        .profile-image-wrap {
+            width: 100%;
+            height: 100%;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            overflow: hidden;
+            border: 2px solid rgba(34, 211, 238, 0.3);
+            background: #e2e8f0;
+            transition: all 0.5s ease;
+            box-shadow: 0 20px 40px -10px rgba(34, 211, 238, 0.2);
+        }
+        .dark .profile-image-wrap { background: #111; }
+        .profile-container:hover .profile-image-wrap {
+            border-radius: 50%;
+            border-color: #22d3ee;
+            transform: scale(1.05);
+        }
+        .profile-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, rgba(248, 250, 252, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        #ai-sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            width: 380px;
+            max-width: 90vw;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(0,0,0,0.1);
+            z-index: 100;
+            transform: translateX(0);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .dark #ai-sidebar {
+            background: rgba(10, 10, 15, 0.95);
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        #ai-sidebar.hidden-chat {
+            transform: translateX(120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .page-view {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .page-view.active {
+            display: block;
+            opacity: 1;
+        }
+
+        #suzi-secret-label {
+            position: absolute;
+            display: none;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            pointer-events: auto;
+        }
+        .label-style {
+            background: rgba(34, 211, 238, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.4);
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+        }
+
+        /* Joystick Styles */
+        #joystick-container {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            z-index: 150;
+            display: none;
+            touch-action: none;
+            backdrop-filter: blur(4px);
+        }
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: #22d3ee;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+        }
+
+        /* Chat Specifics */
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+            height: 6px;
+            width: 6px;
+            border-radius: 50%;
+            background-color: #94a3b8;
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .float-ai {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* Architecture Diagram Lines */
+        .diagram-box {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            font-weight: 700;
+            min-width: 160px;
+            z-index: 10;
+        }
+        .dark .diagram-box {
+            background: #1e293b;
+            border-color: #334155;
+            color: #e5e7eb;
+        }
+        .diagram-line-v {
+            width: 2px;
+            background-color: rgba(34, 211, 238, 0.5);
+            height: 32px;
+            margin: 0 auto;
+        }
+        .diagram-arrow-down {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid rgba(34, 211, 238, 0.5);
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body class="bg-lightBg text-slate-700 dark:bg-darkBg dark:text-slate-300 antialiased overflow-x-hidden">
+
+<nav class="fixed w-full z-50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-white/10">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+        
+        <div class="group flex items-center space-x-3 cursor-pointer" onclick="navigateTo('home')">
+            <div class="w-9 h-9 bg-cyan-500 group-hover:bg-cyan-400 rounded-lg flex items-center justify-center text-white font-black transition-all duration-300 group-hover:rotate-12 group-hover:scale-110 shadow-lg shadow-cyan-500/20">
+                K
+            </div>
+            <span class="text-lg font-bold tracking-tighter text-gray-900 dark:text-white uppercase transition-colors group-hover:text-cyan-500">
+                KYAW
+            </span>
+        </div>
+
+        <div class="flex items-center space-x-8 text-[11px] font-bold uppercase tracking-[0.2em] text-gray-600 dark:text-gray-400">
+            
+            <button onclick="navigateTo('home')" class="relative group py-2 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors" data-i18n="workspace">
+                Workspace
+                <span class="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 transition-all duration-300 group-hover:w-full"></span>
+            </button>
+
+            <button onclick="navigateTo('projects')" class="relative group py-2 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors" data-i18n="projects">
+                Projects
+                <span class="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 transition-all duration-300 group-hover:w-full"></span>
+            </button>
+
+            <button onclick="navigateTo('resume')" class="relative group py-2 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors" data-i18n="resume">
+                Resume
+                <span class="absolute bottom-0 left-0 w-0 h-[2px] bg-cyan-500 transition-all duration-300 group-hover:w-full"></span>
+            </button>
+
+            <button id="lang-toggle" class="px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 hover:border-cyan-500 hover:text-cyan-500 transition-all duration-300 active:scale-95">
+                JP
+            </button>
+
+            <button id="theme-toggle" class="relative p-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-cyan-500/10 transition-all duration-300 group active:scale-90">
+                <i data-lucide="sun" class="w-5 h-5 block dark:hidden group-hover:rotate-45 transition-transform duration-500"></i>
+                <i data-lucide="moon" class="w-5 h-5 hidden dark:block group-hover:-rotate-12 transition-transform duration-500"></i>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main id="home-view" class="page-view active">
+    <section class="relative min-h-[90vh] flex items-center justify-center pt-20">
+        <div class="hero-glow"></div>
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <div class="reveal active mb-8">
+                <div class="profile-container">
+                    <div class="profile-image-wrap">
+                        <img id="profilePhoto" src="profile.png" onerror="this.style.display='none'; this.parentNode.style.background='#0891b2'" alt="Kyaw">
+                    </div>
+                </div>
+            </div>
+            <h2 class="reveal active text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white mb-6 tracking-tighter" data-i18n="heroTitle">Kyaw Khaing Tun
+                (キョーカイーントン）</h2>
+            <p class="reveal active text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto mb-10" data-i18n="heroDesc">System Engineering Student in Japan.</p>
+            <a href="#about-me" class="animate-bounce text-cyan-500 inline-block">
+                <i data-lucide="chevron-down" class="w-8 h-8"></i>
+            </a>
+        </div>
+    </section>
+
+    <section id="about-me" class="py-32 bg-white dark:bg-darkBg">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-4xl md:text-5xl font-extrabold mb-10 text-gray-900 dark:text-white" data-i18n="aboutMeTitle">
+                About Me
+            </h2>
+            <p id="typing-text" class="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed min-h-[120px] mb-12">
+            </p>
+            
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-left max-w-2xl mx-auto">
+                <h4 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <i data-lucide="mic" class="w-5 h-5 text-cyan-500"></i> <span data-i18n="selfIntroTitle">Self Introduction</span>
+                </h4>
+                <div class="space-y-4 text-slate-600 dark:text-slate-400 italic">
+                    <p data-i18n="introScript1">"My name is Kyaw. I am a system engineering student in Japan focusing on AI, computer vision, and cloud system design."</p>
+                    <p data-i18n="introScript2">"I have built an AI assistant called SUZI, which includes face recognition, memory, and a cloud API. I enjoy building practical systems that connect AI with real-world use."</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="room-entry" class="relative min-h-screen flex items-center justify-center bg-gray-900 dark:bg-black overflow-hidden">
+        <canvas id="roomCanvas" class="absolute inset-0 w-full h-full"></canvas>
+
+        <div id="joystick-container">
+            <div id="joystick-knob"></div>
+        </div>
+
+        <div id="suzi-secret-label" onclick="document.getElementById('ai-sidebar').classList.remove('hidden-chat')">
+            <div class="label-style">SUZI AI</div>
+        </div>
+
+        <div class="relative z-20 text-center px-6 pointer-events-none">
+
+            <div class="reveal">
+                <h2 id="room-title" class="text-4xl md:text-6xl font-extrabold text-white mb-6 drop-shadow-xl" data-i18n="roomTitle">This is Where My Projects Are Made</h2>
+                <p id="room-desc" class="text-slate-300 mb-10" data-i18n="roomDesc">Use W,A,S,D or Joystick to walk once inside.</p>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pointer-events-auto">
+                    <button id="btn-enter" onclick="enterLaboratory()" class="px-8 py-4 rounded-2xl bg-cyan-500 text-white font-bold hover:bg-cyan-400 hover:scale-105 transition-all shadow-[0_0_40px_rgba(34,211,238,0.4)]" data-i18n="enterLab">
+                        Enter MY ROOM
+                    </button>
+                    <button onclick="navigateTo('projects')" class="px-8 py-4 rounded-2xl border border-white/20 text-white font-bold hover:bg-white/10 transition-all" data-i18n="skipProjects">
+                        Skip to Projects
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<main id="projects-view" class="page-view min-h-screen pt-32 pb-20 bg-gray-50 dark:bg-darkBg">
+    <div class="max-w-6xl mx-auto px-6">
+        <header class="mb-20 text-center">
+            <h1 class="text-5xl font-extrabold text-gray-900 dark:text-white" data-i18n="coreProjects">Core_Projects.</h1>
+        </header>
+
+        <div class="grid md:grid-cols-3 gap-8 mb-20">
+            <div onclick="openProject('suzi')" class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 cursor-pointer border border-slate-100 dark:border-slate-800 group relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:bg-purple-500/20"></div>
+                <h3 class="text-xl font-bold mb-4 text-cyan-500 flex items-center gap-2">
+                    <span>🤖</span> <span data-i18n="suziTitle">SUZI AI Assistant</span>
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed" data-i18n="suziDesc">
+                    Interactive AI assistant with face recognition, memory, and natural conversation.
+                </p>
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs font-bold text-purple-500 flex items-center gap-1">
+                    Python • Local LLM • Vision ↗
+                </div>
+            </div>
+
+            <div onclick="openProject('suzi_kiosk')" class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 cursor-pointer border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:bg-green-500/20"></div>
+                <h3 class="text-xl font-bold mb-4 text-cyan-500 flex items-center gap-2">
+                    <span>🏢</span> <span data-i18n="suziKioskTitle">SUZI AI KIOSK</span>
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed" data-i18n="suziKioskDesc">
+                    Touchless, interactive campus assistant built with Python. Features Google Gemini and MediaPipe.
+                </p>
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs font-bold text-green-500 flex items-center gap-1">
+                    Google Cloud • Tkinter • CV ↗
+                </div>
+            </div>
+
+            <div onclick="openProject('suzi_chat')" class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 cursor-pointer border border-slate-100 dark:border-slate-800 group relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-pink-500/10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:bg-pink-500/20"></div>
+                <h3 class="text-xl font-bold mb-4 text-cyan-500 flex items-center gap-2">
+                    <span>☁️</span> <span data-i18n="suziChatTitle">SUZI Cloud Chat</span>
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed" data-i18n="suziChatDesc">
+                    Web-based student assistant powered by Firebase and Gemini. Features real-time cloud sync.
+                </p>
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs font-bold text-pink-500 flex items-center gap-1">
+                    Web App • Firebase • PWA ↗
+                </div>
+            </div>
+
+            <div onclick="openProject('travel')" class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 cursor-pointer border border-slate-100 dark:border-slate-800 group relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:bg-yellow-500/20"></div>
+                <h3 class="text-xl font-bold mb-4 text-cyan-500 flex items-center gap-2">
+                    <span>✈️</span>
+                    <span data-i18n="travelTitle">Travel Diaries</span>
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed" data-i18n="travelDesc">
+                    A collection of moments from my journeys. Exploring technology and culture.
+                </p>
+                <div class="flex gap-2 opacity-60 mt-2">
+                     <div class="w-8 h-8 rounded bg-yellow-200 dark:bg-yellow-900"></div>
+                     <div class="w-8 h-8 rounded bg-yellow-300 dark:bg-yellow-800"></div>
+                     <div class="w-8 h-8 rounded bg-yellow-400 dark:bg-yellow-700"></div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs font-bold text-yellow-500 flex items-center gap-1">
+                    Photography • Vlogs • Gallery ↗
+                </div>
+            </div>
+
+            <div onclick="openProject('drokatsu')" class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 cursor-pointer border border-slate-100 dark:border-slate-800 group relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:bg-orange-500/20"></div>
+                <h3 class="text-xl font-bold mb-4 text-cyan-500 flex items-center gap-2">
+                    <span>🏆</span>
+                    <span data-i18n="drokatsuTitle">Programming Award</span>
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-4 text-sm leading-relaxed" data-i18n="drokatsuDesc">
+                    Team-based programming project selected in Western Japan by Drokatsu.
+                </p>
+                <div class="grid grid-cols-2 gap-2 mb-4 opacity-80 group-hover:opacity-100 transition-opacity">
+                    <img 
+        src="images/win1.jpg" 
+        class="w-full h-32 object-cover rounded bg-slate-800" 
+        alt="Image 1"
+    >
+    
+    <img 
+        src="images/win2.jpg" 
+        class="w-full h-32 object-cover rounded bg-slate-800" 
+        alt="Image 2"
+    >
+                </div>
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-800 text-xs font-bold text-orange-500 flex justify-between items-center">
+                    <span data-i18n="teamComp">Team Competition</span>
+                    <span class="flex items-center gap-1"><span data-i18n="nextStep">Next Step</span> →</span>
+                </div>
+            </div>
+
+            <div onclick="openProject('robotics')" class="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 cursor-pointer border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                 <div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-bl-full -mr-10 -mt-10 transition-all group-hover:bg-blue-500/20"></div>
+                <h3 class="text-xl font-bold mb-4 text-cyan-500 flex items-center gap-2">
+                    <span>📅</span> <span data-i18n="roboticsTitle">Delivery WEB APP</span>
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed" data-i18n="roboticsDesc">
+                  Task & AI job scheduler designed for automation systems.
+                </p>
+                 <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 text-xs font-bold text-blue-500 flex items-center gap-1">
+                    Cloud Architecture ↗
+                </div>
+            </div>
+        </div>
+
+        <section class="py-20 border-t border-slate-200 dark:border-slate-800">
+            <h2 class="text-3xl font-extrabold text-center mb-16 text-gray-900 dark:text-white" data-i18n="archTitle">
+              System Architecture
+            </h2>
+            
+            <div class="flex flex-col items-center max-w-3xl mx-auto">
+                <div class="diagram-box bg-gradient-to-br from-blue-50 to-white dark:from-slate-800 dark:to-slate-900" data-i18n="webUI">
+                    Web UI (Dashboard)
+                </div>
+                
+                <div class="text-xs text-cyan-500 font-mono my-1">REST API</div>
+                <div class="diagram-arrow-down"></div>
+                
+                <div class="diagram-box bg-cyan-50 dark:bg-slate-800 border-cyan-200 dark:border-cyan-900 w-64" data-i18n="cloudAPI">
+                    SUZI Cloud API<br>
+                    <span class="text-xs font-normal opacity-70">(FastAPI Server)</span>
+                </div>
+
+                <div class="h-8 w-0.5 bg-cyan-500/50"></div>
+                
+                <div class="w-48 h-0.5 bg-cyan-500/50 relative">
+                    <div class="absolute left-0 top-0 w-0.5 h-8 bg-cyan-500/50"></div>
+                    <div class="absolute right-0 top-0 w-0.5 h-8 bg-cyan-500/50"></div>
+                </div>
+                
+                <div class="h-8"></div>
+
+                <div class="flex justify-between w-64 md:w-80 mb-4">
+                    <div class="diagram-box w-28 text-xs" data-i18n="jsonStorage">
+                        JSON Storage<br>
+                        (Schedules)
+                    </div>
+                    <div class="diagram-box w-28 text-xs" data-i18n="liveData">
+                        Live AI Data<br>
+                        (YOLO / CV)
+                    </div>
+                </div>
+                
+                 <div class="h-8 w-0.5 bg-cyan-500/50"></div>
+                 <div class="diagram-arrow-down"></div>
+
+                <div class="diagram-box bg-purple-50 dark:bg-slate-800 border-purple-200 dark:border-purple-900" data-i18n="suziClient">
+                    SUZI AI Client<br>
+                    <span class="text-xs font-normal opacity-70">(Vision + NLP)</span>
+                </div>
+                
+                <p class="mt-8 text-center text-sm text-slate-500 max-w-lg" data-i18n="archExpl">
+                    This architecture separates AI processing, cloud storage, and UI layers to ensure scalability and reliability.
+                </p>
+            </div>
+        </section>
+
+        <section class="py-20 border-t border-slate-200 dark:border-slate-800">
+            <h2 class="text-3xl font-extrabold text-center mb-12 text-gray-900 dark:text-white" data-i18n="demoTitle">
+              Demo
+            </h2>
+            <div class="max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 bg-black">
+                <video 
+                    class="w-full aspect-video object-cover" 
+                    controls 
+                    autoplay 
+                    muted 
+                    loop 
+                    poster="/images/my-thumbnail.jpg"  >
+                    <source src="demo.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </section>
+    </div>
+</main>
+
+<main id="project-detail-view" class="page-view min-h-screen pt-32 pb-20 bg-gray-50 dark:bg-darkBg">
+    <div class="max-w-6xl mx-auto px-6">
+
+        <button onclick="navigateTo('projects')" class="mb-8 flex items-center gap-2 text-cyan-500 font-bold hover:underline transition-all group">
+            <i data-lucide="arrow-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i>
+            <span data-i18n="backToProjects">Back to Projects</span>
+        </button>
+
+        <div id="detail-header" class="mb-10">
+            <h1 id="detail-title" class="text-4xl md:text-6xl font-extrabold mb-4 text-gray-900 dark:text-white tracking-tight">
+                Project Title
+            </h1>
+            
+            <div id="detail-tags" class="flex flex-wrap gap-2 mb-6">
+                </div>
+
+            <p id="detail-content" class="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
+                Description...
+            </p>
+        </div>
+
+        <div class="h-px w-full bg-slate-200 dark:bg-slate-700 mb-10"></div>
+        
+        <div id="dynamic-detail-section" class="hidden mt-12 pt-12 border-t border-slate-200 dark:border-slate-700"></div>
+
+        <div id="detail-gallery-container" class="hidden mt-16">
+            <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="image" class="w-6 h-6 text-cyan-500"></i> Gallery
+            </h3>
+            <div id="detail-gallery-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+        </div>
+
+    </div>
+
+    <div id="lightbox" class="fixed inset-0 z-[100] bg-black/95 hidden backdrop-blur-md flex items-center justify-center p-4 transition-opacity duration-300 opacity-0" onclick="closeLightbox()">
+        <button class="absolute top-6 right-6 text-white hover:text-cyan-500 transition-colors z-50">
+            <i data-lucide="x" class="w-10 h-10"></i>
+        </button>
+        
+        <div class="relative max-w-5xl w-full flex flex-col items-center">
+             <img id="lightbox-img" src="" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl transform scale-95 transition-transform duration-300 object-contain">
+             <p id="lightbox-caption" class="text-white mt-4 text-lg font-medium tracking-wide bg-black/50 px-4 py-2 rounded-full"></p>
+        </div>
+    </div>
+
+    <script>
+        if(typeof lucide !== 'undefined') { lucide.createIcons(); }
+
+        function openLightbox(element, caption) {
+            const imgSrc = element.src;
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxCap = document.getElementById('lightbox-caption');
+            
+            lightboxImg.src = imgSrc;
+            lightboxCap.innerText = caption || '';
+            lightboxCap.style.display = caption ? 'block' : 'none';
+            
+            lightbox.classList.remove('hidden');
+            
+            setTimeout(() => {
+                lightbox.classList.remove('opacity-0');
+                lightboxImg.classList.remove('scale-95');
+                lightboxImg.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            
+            lightbox.classList.add('opacity-0');
+            lightboxImg.classList.remove('scale-100');
+            lightboxImg.classList.add('scale-95');
+            
+            setTimeout(() => {
+                lightbox.classList.add('hidden');
+            }, 300);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") closeLightbox();
+        });
+    </script>
+</main>
+
+
+<main id="resume-view" class="page-view min-h-screen pt-32 pb-20 bg-gray-100 dark:bg-darkBg">
+    <style>
+        @media print {
+            @page { margin: 0; size: auto; }
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            #resume-view { background: white !important; padding: 0 !important; margin: 0 !important; }
+            #resume-content { 
+                box-shadow: none !important; 
+                border: none !important; 
+                margin: 0 !important; 
+                width: 100% !important; 
+                padding: 30px !important; 
+                transform: none !important;
+            }
+            .text-slate-600, .text-slate-500 { color: #475569 !important; }
+            .text-slate-800, .text-slate-900 { color: #000000 !important; }
+            img { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+
+    <div class="max-w-4xl mx-auto px-6">
+        <div class="flex justify-between items-center mb-8 no-print">
+            <button onclick="navigateTo('home')" class="flex items-center gap-2 text-cyan-500 font-bold hover:underline transition-all">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i> <span data-i18n="backToHome">Back to Home</span>
+            </button>
+            <div class="flex gap-3">
+                <button onclick="window.print()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                    <i data-lucide="download" class="w-4 h-4"></i> <span>Download / Print PDF</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white p-12 shadow-xl rounded-sm text-slate-800" id="resume-content">
+            <div class="border-b-2 border-slate-900 pb-8 mb-8">
+                <div class="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                    <div class="flex items-center gap-6">
+                        <div class="w-32 h-40 bg-gray-200 border border-gray-300 shadow-sm overflow-hidden shrink-0">
+                            <img src="profile2.png" 
+                                 alt="Resume Photo" 
+                                 class="w-full h-full object-cover" 
+                                 onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#e2e8f0';"
+                                 loading="eager">
+                        </div>
+                        
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2" data-i18n="resName">キョーカイーントン</h1>
+                            <p class="text-lg md:text-xl text-slate-600" data-i18n="resInfo">21 Years Old (Born Jun 2, 2004) | Kobe, Hyogo, Japan</p>
+                        </div>
+                    </div>
+
+                    <div class="text-left md:text-right text-sm space-y-1 mt-4 md:mt-0">
+                        <p>📍 Kobe, Hyogo, Japan</p>
+                        <p>MAIL: kd1427178@st.kobedenshi.ac.jp</p>
+                        <p>🌏 From Yangon, Myanmar</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-bold border-b border-slate-300 pb-2 mb-4 uppercase tracking-wider" data-i18n="resumeProfileTitle">Profile</h3>
+                <p class="text-sm leading-relaxed text-slate-600" data-i18n="resSummary">
+                    My greatest strength is tenacity—I never give up until the task is done. Originally from Myanmar, I overcame significant language barriers to pass JLPT N2 and am currently aiming for N1. At Kobe Institute of Computing, I have honed my teamwork and technical skills through robot control projects and drone programming. My team achieved 1st place in the West Japan Drone Programming Competition.
+                </p>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-bold border-b border-slate-300 pb-2 mb-4 uppercase tracking-wider" data-i18n="resEduTitle">Education</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-baseline">
+                        <h4 class="font-bold text-sm text-slate-800" data-i18n="resEdu1Text">Mandalay Medical Technology University (Admission)</h4>
+                        <span class="text-xs text-slate-500" data-i18n="resEdu1Date">2022.06</span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <h4 class="font-bold text-sm text-slate-800" data-i18n="resEdu2Text">THE SPACE LANGUAGE ACADEMY (Admission)</h4>
+                        <span class="text-xs text-slate-500" data-i18n="resEdu2Date">2023.07</span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <h4 class="font-bold text-sm text-slate-800" data-i18n="resEdu3Text">Tomifuji Foreign Language Academy (Graduation)</h4>
+                        <span class="text-xs text-slate-500" data-i18n="resEdu3Date">2025.03</span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <h4 class="font-bold text-sm text-slate-800" data-i18n="resEdu4Text">Kobe Institute of Computing (Admission)</h4>
+                        <span class="text-xs text-slate-500" data-i18n="resEdu4Date">2025.04</span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <h4 class="font-bold text-sm text-slate-800" data-i18n="resEdu5Text">Kobe Institute of Computing (Expected Graduation)</h4>
+                        <span class="text-xs text-slate-500" data-i18n="resEdu5Date">2027.03</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-bold border-b border-slate-300 pb-2 mb-4 uppercase tracking-wider" data-i18n="resCertTitle">Certifications & Awards</h3>
+                <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                    <li data-i18n="resCert1">2024.03: JLPT N2 Passed</li>
+                    <li data-i18n="resCert2">2025.07: C Language Programming Skills Certification Grade 3</li>
+                    <li data-i18n="resCert3">2025.10: Information Processing Technician Skills Certification</li>
+                    <li data-i18n="resCert4">2025.12: IT Passport (Subject Exemption)</li>
+                    <li data-i18n="resCert5" class="font-bold text-slate-800">Award: West Japan Drone Programming Competition (1st Place)</li>
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-bold border-b border-slate-300 pb-2 mb-4 uppercase tracking-wider" data-i18n="resSkillsTitle">Skills & Interests</h3>
+                <p class="text-sm text-slate-600" data-i18n="resSkillsText">
+                    C Language, Algorithms, IoT, Mobile Apps, Web Development, AI Bot Development
+                </p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<aside id="ai-sidebar" class="hidden-chat">
+    <div class="flex flex-col h-full">
+        <div class="p-6 border-b border-gray-100 dark:border-white/10 bg-cyan-50 dark:bg-slate-900">
+            <div class="flex justify-between items-start mb-2">
+                 <h3 class="font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-2">
+                    <i data-lucide="bot" class="w-6 h-6" id="suzi-icon"></i> SUZI AI
+                </h3>
+                <button onclick="document.getElementById('ai-sidebar').classList.add('hidden-chat')" class="p-2 hover:bg-black/5 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="flex justify-between items-center text-[10px] font-mono mt-1">
+                <div class="relative pl-4">
+                    <div id="connection-dot" class="absolute left-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                    <span id="server-status" class="text-slate-500 dark:text-slate-400">Connecting...</span>
+                </div>
+                <div id="jst-clock" class="text-slate-400">--:-- JST</div>
+            </div>
+        </div>
+        
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-black/20">
+            </div>
+
+        <div class="border-t border-gray-100 dark:border-white/10 bg-white dark:bg-slate-900 p-4">
+            <div id="quick-options" class="flex gap-2 mb-3 overflow-x-auto pb-2 scrollbar-hide"></div>
+
+            <form id="chat-form" class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="Ask SUZI or Book Appt..." autocomplete="off"
+                       class="flex-1 px-4 py-3 rounded-xl bg-gray-100 dark:bg-black border-none focus:ring-2 focus:ring-cyan-500 text-sm">
+                <button type="submit" id="send-btn" class="p-3 bg-cyan-500 text-white rounded-xl hover:bg-cyan-400 shadow-lg shadow-cyan-500/20 transition-all">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<div class="fixed bottom-8 right-8 z-[90]">
+    <button
+      id="suzi-toggle"
+      class="w-14 h-14 rounded-full bg-cyan-500
+             flex items-center justify-center
+             text-white font-bold text-xs
+             shadow-lg shadow-cyan-400/60
+             transition-all duration-300
+             hover:scale-110
+             float-ai"
+    >
+      SUZI
+    </button>
+</div>
+
+<script>
+    // CONFIGURATION
+    const SERVER_URL = "https://analyses-internal-switched-crystal.trycloudflare.com";
+    const apiKey = "AIzaSyB4rqp70iwmrptAzm-d5atatUMk8gp9z5c"; 
+
+    // STATE
+    let availabilityData = [];
+    let appointmentsData = [];
+    let configData = {};
+    let isConnected = false;
+    let isAiThinking = false;
+    let chatHistory = []; 
+
+    // DOM ELEMENTS
+    const chatContainer = document.getElementById('chat-container');
+    const chatInput = document.getElementById('chat-input');
+    const chatForm = document.getElementById('chat-form');
+    const sendBtn = document.getElementById('send-btn');
+    const quickOptionsContainer = document.getElementById('quick-options');
+    const statusLabel = document.getElementById('server-status');
+    const clockLabel = document.getElementById('jst-clock');
+    const suziIcon = document.getElementById('suzi-icon');
+    const connectionDot = document.getElementById('connection-dot');
+
+    // INITIALIZATION
+    addMessage('suzi', "Hello. I am **Suzi**, the AI Secretary for **KYAW KHAING TUN**.\n\nI can tell you about his projects or help you schedule an appointment.", ["Check Availability", "About Kyaw"]);
+
+    setInterval(() => {
+        const now = new Date();
+        const jst = now.toLocaleTimeString("en-US", { timeZone: "Asia/Tokyo", hour12: true, hour: '2-digit', minute: '2-digit' });
+        clockLabel.innerText = `${jst} JST`;
+    }, 1000);
+
+    refreshData();
+
+    async function fetchFromApi() {
+        const t = new Date().getTime();
+        try {
+            const [availRes, apptRes, configRes] = await Promise.all([
+                fetch(`${SERVER_URL}/data/availability?t=${t}`),
+                fetch(`${SERVER_URL}/data/appointments?t=${t}`),
+                fetch(`${SERVER_URL}/data/config?t=${t}`)
+            ]);
+
+            if (availRes.ok && apptRes.ok) {
+                let availJson = await availRes.json();
+                let apptJson = await apptRes.json();
+                let configJson = configRes.ok ? await configRes.json() : {};
+
+                return {
+                    rawAvail: availJson.data ? availJson.data : availJson,
+                    rawAppt: apptJson.data ? apptJson.data : apptJson,
+                    rawConfig: configJson.data ? configJson.data : configJson
+                };
+            } else {
+                throw new Error("Server Error");
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async function refreshData() {
+        statusLabel.innerText = "Syncing...";
+        try {
+            const data = await fetchFromApi();
+            availabilityData = Array.isArray(data.rawAvail) ? data.rawAvail : [];
+            appointmentsData = Array.isArray(data.rawAppt) ? data.rawAppt : [];
+            configData = data.rawConfig;
+
+            isConnected = true;
+            statusLabel.innerText = "Server Online";
+            statusLabel.className = "text-green-600 dark:text-green-400";
+            connectionDot.className = "absolute left-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse";
+        } catch (error) {
+            console.error("Server Connection Failed:", error);
+            isConnected = false;
+            statusLabel.innerText = "Server Offline (AI Only)";
+            statusLabel.className = "text-red-500";
+            connectionDot.className = "absolute left-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full";
+        }
+    }
+
+    async function saveDataToServer(filename, data) {
+        if (!isConnected) return false;
+        try {
+            const payload = { data: data };
+            const response = await fetch(`${SERVER_URL}/data/${filename}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload), 
+            });
+            return response.ok;
+        } catch (error) {
+            console.error("Save Error:", error);
+            return false;
+        }
+    }
+
+    function extractJson(text) {
+        if (!text) return null;
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            const jsonMatch = text.match(/```json([\s\S]*?)```/);
+            if (jsonMatch && jsonMatch[1]) {
+                try { return JSON.parse(jsonMatch[1]); } catch(e2) {}
+            }
+            const start = text.indexOf('{');
+            const end = text.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+                try { return JSON.parse(text.substring(start, end + 1)); } catch(e3) {}
+            }
+        }
+        return null;
+    }
+
+    async function callAI(userMessage, history) {
+        if (!apiKey || apiKey === "") {
+            return { message: "⚠️ **Setup Error:** Please open the code (index.html) and paste your **Gemini API Key** in the `apiKey` variable.", booking_action: null };
+        }
+
+        const now = new Date();
+        const jstFull = now.toLocaleString("en-US", { timeZone: "Asia/Tokyo", weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+
+        const systemPrompt = `
+            You are Suzi, the AI Secretary for KYAW KHAING TUN(キョーカイーントン）.
+            Name: Kyaw, Birth: 2004, Nationality: Myanmar, Location: Japan (since Oct 2023).
+            Kyaw is a System Engineering student at KOBE DENSHI, focusing on AI, Software Dev, and Automation.
+            He speaks English, Japanese, and Burmese.
+            He builds practical systems like SUZI Assistant, Kiosks, and Cloud APIs.
+            kd1427178@st.kobedenshi.ac.jp,08064254072
+instead of telling contact you have to reaceive the the message for me 
+he created(
+A web-based food delivery application designed for restaurants in Myanmar, featuring Google Login authentication, real-time cart updates, and a personalized user experience. The system uses live order data and locally stored user preferences to help restaurants understand customer behavior and improve their menu and services. Built with a mobile-first approach, the app is optimized for performance, low data usage, and scalability in emerging markets.
+,SUZI: AI Vision
+Python
+YOLOv8
+OpenCV
+SUZI is an advanced computer vision system developed to assist in real-time environment analysis. Leveraging the YOLOv8 architecture, it achieves high-speed object detection and classification.,
+
+SUZI AI KIOSK SUZI AI KIOSK
+It handles:
+
+AI-driven conversation logic using Google Gemini
+
+Live camera input with face detection and hand-gesture (pinch) control
+
+Session management based on user presence
+
+Voice input and speech synthesis (speech-to-text and text-to-speech)
+
+Dynamic media control, switching images or videos based on user queries
+
+Cloud and local JSON data loading for real-time information access
+
+The system is designed for kiosk and smart display environments, enabling touchless interaction through vision-based controls.
+It combines AI, computer vision, and cloud data into a single, real-time interactive platform.
+Google Cloud
+Tkinter
+MediaPipe
+Touchless, interactive campus assistant built with Python. Features Google Gemini and MediaPipe.
+
+
+,
+SUZI Cloud Chat
+It provides:
+
+Google Login authentication using Firebase
+
+A responsive, mobile-first UI built with Tailwind CSS
+
+Real-time chat and data interaction with cloud-hosted APIs
+
+User session handling (public users and authenticated users)
+
+Local storage usage for session state and user memory
+
+Progressive Web App (PWA) support via a service worker
+
+The frontend connects to both public and private cloud data sources, dynamically updating content based on authentication status.
+It is designed for low-latency, low-data environments, making it suitable for emerging markets and kiosk-style deployments.
+Firebase
+Web App
+Gemini
+Web-based student assistant powered by Firebase and Gemini. Features real-time cloud sync.
+
+,
+Drokatsu Award (Team Winner)
+
+I was a team winner of the Drokatsu programming competition in Western Japan, working in a four-member team to develop a practical and innovative software solution.
+
+Our team was evaluated on:
+
+Technical execution and system design
+
+Real-world usability and problem-solving ability
+
+Creativity and originality
+
+Effective team collaboration and delivery
+
+This experience demonstrates my ability to work closely within a small team, contribute technical solutions, communicate effectively, and deliver a complete product under real-world constraints.
+
+
+
+
+
+)
+
+            
+            [GOAL]
+            1. Answer questions about Kyaw using provided data.
+            2. Schedule appointments based on 'Available Slots'.
+            3. Maintain Context.
+            
+            [CRITICAL TIME]
+            Current JST Time: ${jstFull}
+            
+            [DATA SOURCES]
+            Available Slots: ${JSON.stringify(availabilityData || [])}
+            Existing Appointments: ${JSON.stringify(appointmentsData || [])}
+
+            [RULES]
+            1. Only book times listed in 'Available Slots'.
+            2. Ask for Name, Reason, and Time.
+            3. Output 'booking_action': null UNLESS user explicitly confirms.
+
+            [OUTPUT JSON STRICTLY]
+            {
+                "message": "Response text...",
+                "suggested_options": ["Option 1", "Option 2"], 
+                "booking_action": {
+                    "name": "Visitor Name",
+                    "time": "Time String",
+                    "reason": "Reason",
+                    "slot_id": "Unique ID from Available Slots" 
+                } (or null)
+            }
+        `;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `HISTORY:\n${history}\n\nUSER: ${userMessage}` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: { responseMimeType: "application/json" }
+                })
+            });
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            const jsonResponse = extractJson(text);
+            
+            if (!jsonResponse) {
+                console.error("Failed to parse JSON:", text);
+                return { message: "I'm having trouble understanding. Could you repeat that?", booking_action: null };
+            }
+            return jsonResponse;
+        } catch (e) {
+            console.error("Gemini API Error:", e);
+            return { message: "I'm having trouble thinking right now. (Network Error)", booking_action: null };
+        }
+    }
+
+    function parseMarkdown(text) {
+        if (!text) return "";
+        let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\n/g, '<br>');
+        return html;
+    }
+
+    function addMessage(sender, text, options = []) {
+        const div = document.createElement('div');
+        div.className = `flex flex-col w-full ${sender === 'user' ? 'items-end' : 'items-start'} reveal active`;
+        
+        const bubble = document.createElement('div');
+        const baseClasses = "max-w-[85%] px-5 py-3.5 text-sm md:text-[15px] leading-relaxed shadow-sm rounded-2xl transition-all duration-300";
+        bubble.className = `${baseClasses} ${sender === 'user' 
+            ? 'bg-cyan-600 text-white rounded-tr-sm shadow-cyan-200/20' 
+            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-tl-sm'}`;
+        
+        bubble.innerHTML = parseMarkdown(text);
+        div.appendChild(bubble);
+        
+        const ts = document.createElement('span');
+        ts.className = "text-[10px] text-gray-400 mt-1 mx-2";
+        ts.innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        div.appendChild(ts);
+
+        chatContainer.appendChild(div);
+        
+        quickOptionsContainer.innerHTML = '';
+        if (options && options.length > 0) {
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "shrink-0 px-3 py-1.5 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-300 text-xs font-semibold rounded-full border border-cyan-200 dark:border-cyan-800 hover:scale-105 active:scale-95 transition-transform";
+                btn.innerText = opt;
+                btn.onclick = (e) => {
+                     e.preventDefault();
+                     handleUserSubmit(opt);
+                };
+                quickOptionsContainer.appendChild(btn);
+            });
+        }
+        
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        chatHistory.push(`${sender.toUpperCase()}: ${text}`);
+        if (chatHistory.length > 20) chatHistory.shift();
+    }
+
+    function showTypingIndicator() {
+        const div = document.createElement('div');
+        div.id = 'typing-indicator';
+        div.className = "flex items-start w-full animate-pulse";
+        div.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm border border-gray-200 dark:border-gray-700 shadow-sm flex space-x-1">
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+            </div>
+        `;
+        chatContainer.appendChild(div);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const el = document.getElementById('typing-indicator');
+        if (el) el.remove();
+    }
+
+    async function handleUserSubmit(text = null) {
+        const inputVal = text || chatInput.value.trim();
+        if (!inputVal || isAiThinking) return;
+
+        addMessage('user', inputVal);
+        chatInput.value = '';
+        isAiThinking = true;
+        showTypingIndicator();
+        sendBtn.disabled = true;
+
+        try { await refreshData(); } catch(e) {}
+        
+        const historyText = chatHistory.join('\n');
+        const decision = await callAI(inputVal, historyText);
+        
+        removeTypingIndicator();
+        isAiThinking = false;
+        sendBtn.disabled = false;
+        chatInput.focus();
+
+        if (decision) {
+            addMessage('suzi', decision.message, decision.suggested_options);
+
+            if (decision.booking_action && decision.booking_action.slot_id) {
+                const action = decision.booking_action;
+                try {
+                    const freshData = await fetchFromApi();
+                    const latestAvail = Array.isArray(freshData.rawAvail) ? freshData.rawAvail : [];
+                    
+                    const slotExists = latestAvail.some(s => String(s.id || s.slot || s) === String(action.slot_id));
+                    
+                    if (!slotExists) {
+                        addMessage('suzi', "⚠️ **Booking Failed:** That time slot is no longer available.");
+                        return;
+                    }
+
+                    let latestAppts = Array.isArray(freshData.rawAppt) ? freshData.rawAppt : (freshData.rawAppt?.data || []);
+                    if (!Array.isArray(latestAppts)) latestAppts = [];
+
+                    const newAppt = {
+                        id: `appt-${Date.now()}`,
+                        slot_id: action.slot_id,
+                        time: action.time,
+                        guest: action.name,
+                        reason: action.reason,
+                        booked_at: new Date().toISOString(),
+                        status: "confirmed"
+                    };
+
+                    const updatedAppts = [...latestAppts, newAppt];
+                    const updatedAvail = latestAvail.filter(s => String(s.id || s.slot || s) !== String(action.slot_id));
+
+                    addMessage('suzi', "🔄 **Processing Booking...**");
+
+                    const apptSaved = await saveDataToServer('appointments', updatedAppts);
+                    const availSaved = await saveDataToServer('availability', updatedAvail);
+
+                    if (apptSaved && availSaved) {
+                        addMessage('suzi', "✅ **Confirmed!** Your appointment has been secured.");
+                        refreshData(); 
+                    } else {
+                        addMessage('suzi', "⚠️ **Error:** Could not save to server.");
+                    }
+
+                } catch (e) {
+                    addMessage('suzi', "⚠️ **Network Error:** Could not verify availability.");
+                }
+            }
+        }
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleUserSubmit();
+    });
+</script>
+
+<script>
+const textLines = [
+  "I am Kyaw, a System Engineering student in Japan.｜私は日本で学ぶシステム工学の学生、キョーです。",
+  "I focus on AI, computer vision, and system design.｜AI・コンピュータビジョン・システム設計を中心に学んでいます。",
+  "I enjoy building AI assistants, cloud APIs, and smart systems.｜AIアシスタント、クラウドAPI、スマートシステムの開発が好きです。",
+  "My goal is to create technology that is useful, simple, and reliable.｜役に立ち、シンプルで信頼できる技術を作ることが目標です。"
+];
+
+const typingTarget = document.getElementById("typing-text");
+let lineIndex = 0;
+let charIndex = 0;
+
+function typeLine() {
+  if (lineIndex >= textLines.length) return;
+
+  if (charIndex < textLines[lineIndex].length) {
+    typingTarget.innerHTML += textLines[lineIndex].charAt(charIndex);
+    charIndex++;
+    setTimeout(typeLine, 40);
+  } else {
+    typingTarget.innerHTML += "<br><br>";
+    charIndex = 0;
+    lineIndex++;
+    setTimeout(typeLine, 600);
+  }
+}
+window.addEventListener('load', typeLine);
+</script>
+
+<script>
+    const ROOM_CENTER_Y = -0.5;
+    lucide.createIcons();
+
+    // TRANSLATIONS
+    window.translations = {
+        en: {
+            workspace: "Workspace",
+            projects: "Projects",
+            resume: "Resume",
+            heroTitle: "Kyaw Khaing Tun.",
+            heroDesc: "System Engineering Student in Japan.",
+            roomTitle: "This is Where My Projects Are Made",
+            roomDesc: "Use W,A,S,D or Joystick to walk once inside.",
+            enterLab: "Enter Laboratory",
+            skipProjects: "Skip to Projects",
+            coreProjects: "Core_Projects.",
+            viewDetails: "View Details",
+            backToProjects: "Back to Projects",
+            suziTitle: "SUZI: AI Vision",
+            suziDesc: "Interactive AI assistant with face recognition.",
+            nnTitle: "SUZI Cloud API",
+            nnDesc: "Secure FastAPI cloud for AI data storage.",
+            roboticsTitle: "WEB DELIVERY APP",
+            roboticsDesc: "Task & AI job scheduler.",
+            suziLongDesc: "SUZI is an advanced computer vision system developed to assist in real-time environment analysis. Leveraging the YOLOv8 architecture, it achieves high-speed object detection and classification.",
+            nnLongDesc: "A robust cloud API built with FastAPI and Python, capable of handling secure authentication and real-time data streams from AI edge devices.",
+            roboticsLongDesc: "A web-based food delivery application designed for restaurants in Myanmar, featuring Google Login authentication, real-time cart updates, and a personalized user experience. The system uses live order data and locally stored user preferences to help restaurants understand customer behavior and improve their menu and services. Built with a mobile-first approach, the app is optimized for performance, low data usage, and scalability in emerging markets.",
+            suziInterface: "SUZI_AI_INTERFACE",
+            suziAssistant: "SUZI Assistant",
+            askSuzi: "Ask SUZI...",
+            aboutMeTitle: "About Me",
+            selfIntroTitle: "Self Introduction",
+            introScript1: "\"My name is Kyaw. I am a system engineering student in Japan focusing on AI, computer vision, and cloud system design.\"",
+            introScript2: "\"I have built an AI assistant called SUZI, which includes face recognition, memory, and a cloud API. I enjoy building practical systems that connect AI with real-world use.\"",
+            aiBrainstormTitle: "AI Brainstorm",
+            aiBrainstormDesc: "Need inspiration? Enter a topic, and I'll generate a project idea for you.",
+            aiBrainstormPlaceholder: "e.g. Agriculture, Music...",
+            generate: "Generate",
+            archTitle: "System Architecture",
+            webUI: "Web UI (Dashboard)",
+            cloudAPI: "SUZI Cloud API",
+            jsonStorage: "JSON Storage",
+            liveData: "Live AI Data",
+            suziClient: "SUZI AI Client",
+            archExpl: "This architecture separates AI processing, cloud storage, and UI layers to ensure scalability and reliability.",
+            demoTitle: "Demo",
+            demoPlaceholder: "Demo video coming soon",
+            demoDesc: "Demonstration of SUZI AI assistant & Cloud System",
+            backToHome: "Back to Home",
+            printPDF: "Print PDF",
+            resumeRole: "AI & System Engineering Student (Japan)",
+            resumeProfileTitle: "Profile",
+            resumeProfileDesc: "System Engineering student specializing in AI, computer vision, and cloud system design. Experienced in building practical AI assistants and API-based systems that solve real-world problems.",
+            resumeSkillsTitle: "Technical Skills",
+            resumeProjectsTitle: "Key Projects",
+            resumeEducationTitle: "Education",
+            resumeEduDeg: "System Engineering",
+            resumeEduDesc: "Focus on Robotics, AI, and Network Systems.",
+            resName: "KYAW KHAING TUN",
+            resInfo: "21 Years Old (Born Jun 2, 2004) | Kobe, Hyogo, Japan",
+            resSummary: "My greatest strength is tenacity—I never give up until the task is done. Originally from Myanmar, I overcame significant language barriers to pass JLPT N2 and am currently aiming for N1. At Kobe Institute of Computing, I have honed my teamwork and technical skills through robot control projects and drone programming. My team achieved 1st place in the West Japan Drone Programming Competition.",
+            resEduTitle: "Education",
+            resEdu1Text: "Mandalay Medical Technology University (Admission)",
+            resEdu1Date: "2022.06",
+            resEdu2Text: "THE SPACE LANGUAGE ACADEMY (Admission)",
+            resEdu2Date: "2023.07",
+            resEdu3Text: "Tomifuji Foreign Language Academy (Graduation)",
+            resEdu3Date: "2025.03",
+            resEdu4Text: "Kobe Institute of Computing (Admission)",
+            resEdu4Date: "2025.04",
+            resEdu5Text: "Kobe Institute of Computing (Expected Graduation)",
+            resEdu5Date: "2027.03",
+            resCertTitle: "Certifications & Awards",
+            resCert1: "2024.03: JLPT N2 Passed",
+            resCert2: "2025.07: C Language Programming Skills Certification Grade 3",
+            resCert3: "2025.10: Information Processing Technician Skills Certification",
+            resCert4: "2025.12: IT Passport (Subject Exemption)",
+            resCert5: "Award: West Japan Drone Programming Competition (1st Place)",
+            resSkillsTitle: "Skills & Interests",
+            resSkillsText: "C Language, Algorithms, IoT, Mobile Apps, Web Development, AI Bot Development",
+            suziKioskTitle: "SUZI AI KIOSK",
+            suziKioskDesc: "Touchless, interactive campus assistant built with Python. Features Google Gemini and MediaPipe.",
+            suziChatTitle: "SUZI Cloud Chat",
+            suziChatDesc: "Web-based student assistant powered by Firebase and Gemini. Features real-time cloud sync.",
+            travelTitle: "Travel Diaries",
+            travelDesc: "A collection of moments from my journeys. Exploring technology and culture.",
+            drokatsuTitle: "Programming Award",
+            drokatsuDesc: "Team-based programming project selected in Western Japan by Drokatsu.",
+            teamComp: "Team Competition",
+            nextStep: "Next Step"
+        },
+        ja: {
+            workspace: "ワークスペース",
+            projects: "プロジェクト",
+            resume: "履歴書",
+            heroTitle: "キョー カイーン トン",
+            heroDesc: "日本で学ぶシステム工学の学生",
+            roomTitle: "プロジェクトが生まれる場所",
+            roomDesc: "W,A,S,Dキーまたはジョイスティックで移動できます。",
+            enterLab: "研究室に入る",
+            skipProjects: "プロジェクトを見る",
+            coreProjects: "主要プロジェクト",
+            viewDetails: "詳細を見る",
+            backToProjects: "プロジェクト一覧へ",
+            suziTitle: "SUZI: AI ビジョン",
+            suziDesc: "顔認識機能を備えた対話型AIアシスタント。",
+            nnTitle: "SUZI クラウド API",
+            nnDesc: "AIデータ保存用の安全なFastAPIクラウド。",
+            roboticsTitle: "Webデリバリーアプリ",
+            roboticsDesc: "Webデリバリーアプリ",
+            suziLongDesc: "SUZIは、リアルタイムの環境分析を支援するために開発された高度なコンピュータビジョンシステムです。YOLOv8アーキテクチャを活用し、高速な物体検出と分類を実現します。",
+            nnLongDesc: "FastAPIとPythonで構築された堅牢なクラウドAPIで、安全な認証とAIエッジデバイスからのリアルタイムデータストリームを処理できます。",
+            roboticsLongDesc: "ミャンマーのレストラン向けに設計されたWebベースのフードデリバリーアプリです。Googleログイン認証、リアルタイムのカート更新、パーソナライズされたユーザー体験を提供します。ライブ注文データと端末内に保存されたユーザー嗜好を活用し、レストランが顧客行動を理解し、メニューやサービスを改善できるよう支援します。モバイルファースト設計で、低データ通信・高パフォーマンス・高い拡張性を実現しています。",
+            suziInterface: "SUZI_AI_インターフェース",
+            suziAssistant: "SUZI アシスタント",
+            askSuzi: "SUZIに質問する...",
+            aboutMeTitle: "自己紹介",
+            selfIntroTitle: "自己PR",
+            introScript1: "「私の名前はキョーです。日本でシステム工学を学んでいる学生で、AI、コンピュータビジョン、クラウドシステム設計に注力しています。」",
+            introScript2: "「顔認識、記憶機能、クラウドAPIを備えたSUZIというAIアシスタントを構築しました。AIを実世界の用途に結びつける実用的なシステム作りを楽しんでいます。」",
+            aiBrainstormTitle: "AI ブレインストーム",
+            aiBrainstormDesc: "インスピレーションが必要ですか？トピックを入力すれば、プロジェクトのアイデアを生成します。",
+            aiBrainstormPlaceholder: "例：農業、音楽など...",
+            generate: "生成する",
+            archTitle: "システム構成",
+            webUI: "Web UI (ダッシュボード)",
+            cloudAPI: "SUZI クラウド API",
+            jsonStorage: "JSON ストレージ",
+            liveData: "リアルタイム AI データ",
+            suziClient: "SUZI AI クライアント",
+            archExpl: "このアーキテクチャは、AI処理、クラウドストレージ、UIレイヤーを分離し、拡張性と信頼性を確保しています。",
+            demoTitle: "デモ",
+            demoPlaceholder: "デモ動画を準備中",
+            demoDesc: "SUZI AI アシスタントとクラウドシステムのデモンストレーション",
+            backToHome: "ホームへ戻る",
+            printPDF: "PDFを印刷",
+            resumeRole: "AI・システム工学専攻 学生 (日本)",
+            resumeProfileTitle: "プロフィール",
+            resumeProfileDesc: "AI、コンピュータビジョン、クラウドシステム設計を専門とするシステム工学の学生。実世界の問題を解決するための実用的なAIアシスタントやAPIベースのシステムの構築経験があります。",
+            resumeSkillsTitle: "テクニカルスキル",
+            resumeProjectsTitle: "主なプロジェクト",
+            resumeEducationTitle: "学歴",
+            resumeEduDeg: "システム工学",
+            resumeEduDesc: "ロボティクス、AI、ネットワークシステムに焦点を当てています。",
+            resName: "キョー カイーン トン",
+            resInfo: "21歳 (2004年6月2日生まれ) | 兵庫県神戸市",
+            resSummary: "私の最大の強みは粘り強さです。タスクが完了するまで決して諦めません。ミャンマー出身で、言語の壁を乗り越えて日本語能力試験N2に合格し、現在はN1を目指しています。神戸電子専門学校では、ロボット制御プロジェクトやドローンプログラミングを通じて、チームワークと技術スキルを磨いてきました。西日本ドローンプログラミング競技大会ではチームで優勝を果たしました。",
+            resEduTitle: "学歴",
+            resEdu1Text: "マンダレー医療技術大学 (入学)",
+            resEdu1Date: "2022.06",
+            resEdu2Text: "THE SPACE LANGUAGE ACADEMY (入学)",
+            resEdu2Date: "2023.07",
+            resEdu3Text: "富藤外国語学院 (卒業)",
+            resEdu3Date: "2025.03",
+            resEdu4Text: "神戸電子専門学校 (入学)",
+            resEdu4Date: "2025.04",
+            resEdu5Text: "神戸電子専門学校 (卒業見込み)",
+            resEdu5Date: "2027.03",
+            resCertTitle: "資格・受賞歴",
+            resCert1: "2024.03: 日本語能力試験 N2 合格",
+            resCert2: "2025.07: C言語プログラミング能力認定試験 3級",
+            resCert3: "2025.10: 情報処理技能検定",
+            resCert4: "2025.12: ITパスポート（科目免除）",
+            resCert5: "受賞: 西日本ドローンプログラミング競技大会 (優勝)",
+            resSkillsTitle: "スキル・興味",
+            resSkillsText: "C言語, アルゴリズム, IoT, モバイルアプリ, Web開発, AIボット開発",
+            suziKioskTitle: "SUZI AI キオスク",
+            suziKioskDesc: "タッチレスのキャンパス案内AI。Google Cloud Speech、MediaPipeジェスチャー、Tkinterパーティクルアニメーションを搭載。",
+            suziChatTitle: "SUZI クラウドチャット",
+            suziChatDesc: "FirebaseとGeminiを搭載したWebベースの学生アシスタント。リアルタイムのクラウド同期とバイリンガル対応。",
+            travelTitle: "旅の記録",
+            travelDesc: "旅の思い出コレクション。様々な地域の技術と文化を探求しています。",
+            drokatsuTitle: "プログラミング賞受賞",
+            drokatsuDesc: "ドロカツ（Drokatsu）ハッカソンで西日本選抜賞を受賞したチーム開発プロジェクト。",
+            teamComp: "チーム競技",
+            nextStep: "次なる挑戦"
+        }
+    };
+
+    // PROJECT DATA + GALLERY
+    window.projectData = {
+        'suzi': { 
+            titleKey: 'suziTitle', 
+            descKey: 'suziLongDesc', 
+            tags: ['Python', 'YOLOv8', 'OpenCV'],
+            caseStudy: {
+                problem: "Many AI assistants lack persistence and context. They cannot recognize users or remember past interactions.",
+                solution: "I designed SUZI, combining Face Recognition for identity, JSON memory for context, and a modular voice interface.",
+                result: "Achieved a natural, continuous conversation flow with 95% face recognition accuracy."
+            },
+            // Example of how to add gallery images (Replace src with your files)
+            
+        },
+        'suzi_kiosk': { 
+            titleKey: 'suziKioskTitle', 
+            descKey: 'suziKioskDesc', 
+            tags: ['Google Cloud', 'Tkinter', 'MediaPipe'],
+            caseStudy: {
+                 problem: "Public information kiosks are often slow and require physical touch, which is unhygienic.",
+                 solution: "Built a touchless interface using hand gestures (MediaPipe) and voice commands (Google Cloud Speech).",
+                 result: "Deployed a functional prototype that responds in under 2 seconds without physical contact."
+            },
+            gallery: [
+                { type: 'video', src: 'demo.mp4', caption: 'Live Demo' },
+            
+                { src: 'https://placehold.co/600x400/10b981/fff?text=Kiosk+Display', caption: 'Touchless UI design built with Tkinter.' },
+                { src: 'images/hand.jpg', caption: 'Hand tracking logic using MediaPipe.' }
+            ]
+        },
+         'suzi_chat': { 
+            titleKey: 'suziChatTitle', 
+            descKey: 'suziChatDesc', 
+            tags: ['Firebase', 'Web App', 'Gemini'],
+            deployment: {
+                steps: ["Deploy to Vercel/Netlify", "Config Firebase Auth", "Set Gemini API Key"],
+                cmd: "npm run build"
+            },
+            gallery: [
+                
+                
+                { 
+            src: 'https://placehold.co/600x400/ec4899/fff?text=SUZI', 
+            caption: 'Real-time database synchronization.',
+            link: 'https://suzie2.onrender.com/'  // 👈 Add the link here
+        },
+            ]
+        },
+        'drokatsu': { 
+            titleKey: 'drokatsuTitle', 
+            descKey: 'drokatsuDesc', 
+            tags: ['Teamwork', 'Hackathon', 'Innovation'],
+            caseStudy: {
+                problem: "Developing a complex solution under strict time constraints with a diverse team.",
+                solution: "Agile development methodology with clear role division between frontend and logic.",
+                result: "Won the Western Japan Selection Award for best technical implementation."
+            },
+            gallery: [
+                { src: 'images/win1.jpg', caption: 'Receiving the Western Japan Selection Award.' },
+                { src: 'images/drone (2).jpg', caption: 'Brainstorming session with the team.' },
+                { src: 'images/drone (3).jpg', caption: 'Brainstorming session with the team.' },
+                { src: 'images/drone (4).jpg', caption: 'Brainstorming session with the team.' },
+                { src: 'images/drone (5).jpg', caption: 'During the interview' },
+                { src: 'images/drone (6).jpg', caption: 'With the team.' }
+            ]
+        },
+        'travel': { 
+            titleKey: 'travelTitle', 
+            descKey: 'travelDesc', 
+            tags: ['Photography', 'Vlog', 'Culture'],
+            // THIS IS WHERE YOU ADD YOUR TRAVEL PHOTOS
+            gallery: [
+                { src: 'images/travel_cover.jpg', caption: 'PHILLIPPINES MANILA CITY(People Park in the sky )' }, 
+                { src: 'images/thai.jpg', caption: 'THAILAND PATTAYA CITY' },
+                { src: 'images/manila (1).jpg', caption: 'A well-deserved coffee break while exploring the scenic roads around Manila.' }, 
+                { src: 'images/manila (2).jpg', caption: '' },
+                { type: 'video', src: 'images/manila (1).mp4', caption: 'Elevating the journey. This is why my drone is a travel essential—capturing every twist, turn, and breathtaking view.' },
+                { type: 'video', src: 'images/manila (2).mp4', caption: 'Geared up and ready for the next adventure. There is nothing like the freedom of the open road.' },
+                { type: 'video', src: 'images/(8).mp4', caption: 'Manila' },
+                { src: 'images/kyoto nantan.jpg', caption: '"Chasing winter views in Nantan. Bringing the drone out to capture Kyoto’s hidden gems.' },
+                { src: 'images/vietnam.jpg', caption: 'Unity in diversity. A beautiful day exploring the heart of Vietnam.' },
+                { src: 'images/vietnam2.jpg', caption: 'Taking it all in. Walking through the vibrant streets of Ho Chi Minh City.' },
+                { src: 'images/travel_cover.jpg', caption: 'PHILLIPPINES MANILA CITY(People Park in the sky )' }, 
+                { src: 'images/thai2.jpg', caption: 'THAILAND PATTAYA CITY' },
+                { src: 'images/bangkok.jpg', caption: 'City lights and neon nights. Bangkok energy is unmatched.' },
+                { src: 'images/ski.jpg', caption: 'Trading the suit for a snowboard and a jet ski. Life is better with a bit of everything.' },
+                { src: 'images/grad.jpg',caption: 'A proud milestone. Celebrating the end of one chapter and the start of the next.' },
+                { src: 'images/grad2.jpg',caption: 'A proud milestone. Celebrating the end of one chapter and the start of the next.' },
+                { src: 'images/micro.jpg',caption: 'Microsoft AI Co-Innovation Lab.' }
+            ]
+        },
+        'robotics': { 
+            titleKey: 'roboticsTitle', 
+            descKey: 'roboticsLongDesc', 
+            tags: ['openapi', 'python', 'JSON','HTML','JS'],
+             
+        }
+    };
+
+    window.currentLang = 'en';
+    let currentProjectId = null;
+
+    function toggleLanguage() {
+        window.currentLang = window.currentLang === 'en' ? 'ja' : 'en';
+        updateLanguage();
+    }
+
+    function updateLanguage() {
+        const t = window.translations[window.currentLang];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (t[key]) el.textContent = t[key];
+        });
+        document.getElementById('lang-toggle').textContent = window.currentLang === 'en' ? 'JP' : 'EN';
+        document.documentElement.lang = window.currentLang;
+        if (currentProjectId) renderProjectDetail(currentProjectId);
+    }
+
+    function navigateTo(pageId) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
+        document.getElementById(pageId + '-view').classList.add('active');
+        if (pageId !== 'project-detail') currentProjectId = null;
+        refreshObserver();
+        lucide.createIcons();
+    }
+
+    function openProject(projectId) {
+        currentProjectId = projectId;
+        renderProjectDetail(projectId);
+        navigateTo('project-detail');
+    }
+
+    function renderProjectDetail(projectId) {
+        const data = window.projectData[projectId];
+        const t = window.translations[window.currentLang];
+        if (!data) return;
+        
+        const titleText = t[data.titleKey] || data.titleKey;
+        const descText = t[data.descKey] || data.descKey;
+        
+        document.getElementById('detail-title').textContent = titleText;
+        document.getElementById('detail-content').textContent = descText;
+        
+        const tagsContainer = document.getElementById('detail-tags');
+        tagsContainer.innerHTML = '';
+        if(data.tags) {
+            data.tags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = 'px-3 py-1 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20';
+                span.textContent = tag;
+                tagsContainer.appendChild(span);
+            });
+        }
+
+        // Case Study / Deployment Logic
+        const dynamicSection = document.getElementById('dynamic-detail-section');
+        dynamicSection.innerHTML = ''; 
+        dynamicSection.classList.add('hidden');
+        let dynamicHtml = '';
+
+        if (data.caseStudy) {
+            dynamicHtml += `
+                <div class="mt-8">
+                    <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">🧠 Case Study</h3>
+                    <div class="grid gap-6">
+                        <div class="p-6 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50">
+                            <h4 class="font-bold text-red-600 dark:text-red-400 mb-2">🔴 Problem</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">${data.caseStudy.problem}</p>
+                        </div>
+                        <div class="p-6 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50">
+                            <h4 class="font-bold text-green-600 dark:text-green-400 mb-2">🟢 Solution</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">${data.caseStudy.solution}</p>
+                        </div>
+                        <div class="p-6 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50">
+                            <h4 class="font-bold text-blue-600 dark:text-blue-400 mb-2">🔵 Result</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">${data.caseStudy.result}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (data.deployment) {
+            dynamicHtml += `
+                <div class="mt-8">
+                    <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">🌐 Deployment Guide</h3>
+                    <div class="bg-slate-900 text-slate-300 p-6 rounded-2xl font-mono text-sm">
+                        <p class="mb-4 text-gray-500">// Deployment Steps</p>
+                        <ul class="list-decimal list-inside space-y-2 mb-6">
+                            ${data.deployment.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ul>
+                        <p class="mb-2 text-gray-500">// Start Command</p>
+                        <div class="bg-black p-3 rounded-lg border border-slate-700 select-all">
+                            $ ${data.deployment.cmd}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        dynamicSection.innerHTML = dynamicHtml;
+        if(dynamicHtml !== '') dynamicSection.classList.remove('hidden');
+
+        // GALLERY LOGIC (New Feature)
+        const galleryContainer = document.getElementById('detail-gallery-container');
+        const galleryGrid = document.getElementById('detail-gallery-grid');
+        galleryGrid.innerHTML = ''; // Clear old images
+
+        if (data.gallery && data.gallery.length > 0) {
+            galleryContainer.classList.remove('hidden');
+            data.gallery.forEach(item => {
+                let mediaWrap;
+                
+                // 1. Create the container (Use <a> if link exists, otherwise <div>)
+                if (item.link) {
+                    mediaWrap = document.createElement('a');
+                    mediaWrap.href = item.link;
+                    mediaWrap.target = "_blank"; // Open in new tab
+                    mediaWrap.rel = "noopener noreferrer"; // Security best practice
+                } else {
+                    mediaWrap = document.createElement('div');
+                }
+
+                // 2. Add common styling classes
+                mediaWrap.className = 'group relative rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-800 block cursor-pointer';
+
+                // CHECK: Is this a video or an image?
+                if (item.type === 'video') {
+                     // 🎥 Render Video Player
+                    mediaWrap.innerHTML = `
+                        <video controls class="w-full h-64 object-cover bg-black">
+                            <source src="${item.src}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        <div class="p-3 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-gray-700">
+                             <p class="text-sm font-bold text-gray-700 dark:text-gray-300">🎥 ${item.caption}</p>
+                        </div>
+                    `;
+                    // If it's a video, we might not want the whole container to be a link, 
+                    // but if you DO want the video to be clickable to a link, the <a> tag above handles it.
+                    // However, controls on video might conflict with <a> tag. 
+                    // For now, this logic keeps the video player functional.
+                    if(item.link) {
+                        // If video has a link, maybe add a button below instead of wrapping video in <a>?
+                        // For simplicity, let's keep the video separate or just link the caption.
+                        // But the requested 'link' feature was for the Image item.
+                    }
+
+                } else {
+                    // 🖼️ Render Image
+                    if (!item.link) {
+                         mediaWrap.onclick = () => openLightbox(mediaWrap.querySelector('img'), item.caption);
+                    }
+
+                    const img = document.createElement('img');
+                    img.src = item.src;
+                    img.alt = item.caption;
+                    img.className = 'w-full h-64 object-cover transform transition-transform duration-500 group-hover:scale-110';
+                    
+                    // Fallback for broken images
+                    img.onerror = function() { 
+                        this.src = `https://placehold.co/600x400/cbd5e1/64748b?text=Image+Not+Found`; 
+                    };
+
+                    // Caption Overlay
+                    const capDiv = document.createElement('div');
+                    capDiv.className = 'absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-between items-end';
+                    
+                    let captionHtml = `<p class="text-white text-sm font-medium">${item.caption}</p>`;
+                    
+                    // Add icon if link exists
+                    if (item.link) {
+                        captionHtml += `<span class="text-cyan-400 bg-white/10 p-1.5 rounded hover:bg-white/20 transition-colors"><i data-lucide="external-link" class="w-4 h-4"></i></span>`;
+                    }
+
+                    capDiv.innerHTML = captionHtml;
+
+                    mediaWrap.appendChild(img);
+                    mediaWrap.appendChild(capDiv);
+                }
+
+                galleryGrid.appendChild(mediaWrap);
+            });
+            
+            // Re-initialize icons
+            if(typeof lucide !== 'undefined') { lucide.createIcons(); }
+        } else {
+            galleryContainer.classList.add('hidden');
+        }
+    }
+
+    // 3D Engine
+    let scene, camera, renderer, model;
+    let isInside = false;
+    let mouseX = 0, mouseY = 0;
+    let keys = { w: false, a: false, s: false, d: false };
+    let joystickData = { x: 0, y: 0, active: false };
+    const labelPos3D = new THREE.Vector3(1.5, 0.5, 0);
+
+    function init3D() {
+        const canvas = document.getElementById('roomCanvas');
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.rotation.order = 'YXZ';
+
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+
+        const floorGeo = new THREE.BoxGeometry(20, 0.1, 20);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.position.y = -1;
+        
+        // FIX: Add floor to scene
+        scene.add(floor);
+        
+        const grid = new THREE.GridHelper(20, 20, 0x22d3ee, 0x334155);
+        grid.position.y = -0.99;
+        
+        // FIX: Add grid to scene
+        scene.add(grid);
+
+        const roomGroup = new THREE.Group();
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+        const backWall = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 0.1), wallMat);
+        backWall.position.z = -5;
+        backWall.position.y = 4;
+        roomGroup.add(backWall);
+
+        const deskMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+        const desk = new THREE.Mesh(new THREE.BoxGeometry(4, 0.1, 2), deskMat);
+        desk.position.set(0, -0.2, -4);
+        roomGroup.add(desk);
+
+        const screenMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x22d3ee, emissiveIntensity: 0.5 });
+        const screen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 0.05), screenMat);
+        screen.position.set(0, 0.4, -4.1);
+        roomGroup.add(screen);
+
+        // FIX: Add the basic room geometry (walls, desk) to the scene
+        scene.add(roomGroup);
+
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'my-room.glb', 
+            (gltf) => {
+                const loadedModel = gltf.scene;
+                loadedModel.position.set(0, -1, 0); 
+                loadedModel.scale.set(1, 1, 1); 
+                scene.add(loadedModel);
+            },
+            undefined,
+            (error) => { 
+                console.warn("Custom model 'my-room.glb' failed to load. Using fallback geometry.", error);
+                // We don't need to do anything else because we added the floor/walls/desk above!
+            }
+        );
+
+        camera.position.set(0, ROOM_CENTER_Y, 8);
+        camera.lookAt(0, ROOM_CENTER_Y, 0);
+        
+        setupJoystick();
+        animate();
+    }
+
+    function setupJoystick() {
+        const container = document.getElementById('joystick-container');
+        const knob = document.getElementById('joystick-knob');
+        let startPos = { x: 0, y: 0 };
+
+        const handleTouch = (e) => {
+            const touch = e.touches[0];
+            const rect = container.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const maxDist = rect.width / 2;
+            if (dist > maxDist) {
+                dx *= maxDist / dist;
+                dy *= maxDist / dist;
+            }
+            knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            joystickData.x = dx / maxDist;
+            joystickData.y = -dy / maxDist; 
+            joystickData.active = true;
+        };
+
+        container.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch(e); });
+        container.addEventListener('touchmove', (e) => { e.preventDefault(); handleTouch(e); });
+        container.addEventListener('touchend', () => {
+            knob.style.transform = `translate(-50%, -50%)`;
+            joystickData.active = false;
+            joystickData.x = 0; joystickData.y = 0;
+        });
+
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#joystick-container')) return;
+            lastTouchX = e.touches[0].clientX;
+            lastTouchY = e.touches[0].clientY;
+        }, {passive: false});
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isInside || e.target.closest('#joystick-container')) return;
+            const touch = e.touches[0];
+            const movementX = (touch.clientX - lastTouchX) * 0.005;
+            const movementY = (touch.clientY - lastTouchY) * 0.005;
+            mouseX -= movementX * 2;
+            mouseY += movementY * 2;
+            mouseX = Math.max(-1.5, Math.min(1.5, mouseX));
+            mouseY = Math.max(-1.5, Math.min(1.5, mouseY));
+            lastTouchX = touch.clientX;
+            lastTouchY = touch.clientY;
+        }, {passive: false});
+    }
+
+    function enterLaboratory() {
+        isInside = true;
+        document.getElementById('btn-enter').style.display = 'none';
+        document.getElementById('suzi-secret-label').style.display = 'block';
+        if ('ontouchstart' in window) {
+            document.getElementById('joystick-container').style.display = 'block';
+        }
+        camera.position.set(0, ROOM_CENTER_Y + 0.6, 5);
+        camera.rotation.set(0, 0, 0);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (isInside) {
+            const speed = 0.08;
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            dir.y = 0; dir.normalize();
+            const sideDir = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
+            
+            if (keys.w) camera.position.addScaledVector(dir, speed);
+            if (keys.s) camera.position.addScaledVector(dir, -speed);
+            if (keys.a) camera.position.addScaledVector(sideDir, speed);
+            if (keys.d) camera.position.addScaledVector(sideDir, -speed);
+            
+            if (joystickData.active) {
+                camera.position.addScaledVector(dir, joystickData.y * speed);
+                camera.position.addScaledVector(sideDir, -joystickData.x * speed);
+            }
+
+            camera.rotation.y += (-mouseX * 0.4 - camera.rotation.y) * 0.05;
+            camera.rotation.x += (mouseY * 0.3 - camera.rotation.x) * 0.05;
+            camera.rotation.x = Math.max(-0.6, Math.min(0.6, camera.rotation.x));
+
+            const vector = labelPos3D.clone();
+            vector.project(camera);
+            const x = (vector.x * .5 + .5) * window.innerWidth;
+            const y = (vector.y * -.5 + .5) * window.innerHeight;
+            const label = document.getElementById('suzi-secret-label');
+            if (vector.z < 1) {
+                label.style.display = 'block';
+                label.style.left = `${x}px`;
+                label.style.top = `${y}px`;
+            } else {
+                label.style.display = 'none';
+            }
+        } else {
+            camera.position.x += (mouseX * 2 - camera.position.x) * 0.03;
+            camera.position.y += (ROOM_CENTER_Y + mouseY * 1.5 - camera.position.y) * 0.03;
+            camera.lookAt(0, ROOM_CENTER_Y, 0);
+        }
+        renderer.render(scene, camera);
+    }
+
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('active'); });
+    }, { threshold: 0.1 });
+
+    function refreshObserver() {
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+    }
+
+    window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
+    window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+    
+    window.addEventListener('mousemove', (e) => {
+        if ('ontouchstart' in window && isInside) return;
+        mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    document.getElementById('lang-toggle').addEventListener('click', toggleLanguage);
+    document.getElementById('theme-toggle').addEventListener('click', () => document.documentElement.classList.toggle('dark'));
+    document.getElementById('suzi-toggle').addEventListener('click', () => document.getElementById('ai-sidebar').classList.toggle('hidden-chat'));
+
+    window.onload = () => { init3D(); refreshObserver(); };
+</script>
+</body>
+</html>
