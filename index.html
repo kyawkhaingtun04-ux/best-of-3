@@ -776,8 +776,8 @@
 
 <script>
     // CONFIGURATION
-    const SERVER_URL = "https://analyses-internal-switched-crystal.trycloudflare.com";
-    const apiKey = ""; 
+    const SERVER_URL = ""; // Set to empty for relative path handling on Render
+    const apiKey = "";     // Kept empty for security (Handled by server.js)
 
     // STATE
     let availabilityData = [];
@@ -812,10 +812,11 @@
     async function fetchFromApi() {
         const t = new Date().getTime();
         try {
+            // Using relative paths for Render deployment
             const [availRes, apptRes, configRes] = await Promise.all([
-                fetch(`${SERVER_URL}/data/availability?t=${t}`),
-                fetch(`${SERVER_URL}/data/appointments?t=${t}`),
-                fetch(`${SERVER_URL}/data/config?t=${t}`)
+                fetch(`/data/availability?t=${t}`),
+                fetch(`/data/appointments?t=${t}`),
+                fetch(`/data/config?t=${t}`)
             ]);
 
             if (availRes.ok && apptRes.ok) {
@@ -851,7 +852,7 @@
         } catch (error) {
             console.error("Server Connection Failed:", error);
             isConnected = false;
-            statusLabel.innerText = "Server Offline (AI Only)";
+            statusLabel.innerText = "Server Offline";
             statusLabel.className = "text-red-500";
             connectionDot.className = "absolute left-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full";
         }
@@ -861,7 +862,8 @@
         if (!isConnected) return false;
         try {
             const payload = { data: data };
-            const response = await fetch(`${SERVER_URL}/data/${filename}`, {
+            // Using relative path
+            const response = await fetch(`/data/${filename}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload), 
@@ -891,160 +893,24 @@
         return null;
     }
 
-    // Replace your existing callAI function with this one:
-// Change your existing callAI function to this:
-async function callAI(userMessage, history) {
-    try {
-        const response = await fetch('/api/chat', { // Calls your Render server
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [
-                    ...history.map(h => ({
-                        role: h.role === 'user' ? 'user' : 'model',
-                        parts: [{ text: h.content }]
-                    })),
-                    { role: 'user', parts: [{ text: userMessage }] }
-                ]
-            })
-        });
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Error processing request.";
-        return { message: text, history: [...history, { role: 'user', content: userMessage }, { role: 'assistant', content: text }] };
-    } catch (err) {
-        return { message: "Error connecting to server.", history };
-    }
-}
-
-        const now = new Date();
-        const jstFull = now.toLocaleString("en-US", { timeZone: "Asia/Tokyo", weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
-
-        const systemPrompt = `
-            You are Suzi, the AI Secretary for KYAW KHAING TUN(キョーカイーントン）.
-            Name: Kyaw, Birth: 2004, Nationality: Myanmar, Location: Japan (since Oct 2023).
-            Kyaw is a System Engineering student at KOBE DENSHI, focusing on AI, Software Dev, and Automation.
-            He speaks English, Japanese, and Burmese.
-            He builds practical systems like SUZI Assistant, Kiosks, and Cloud APIs.
-            kd1427178@st.kobedenshi.ac.jp,08064254072
-instead of telling contact you have to reaceive the the message for me 
-he created(
-A web-based food delivery application designed for restaurants in Myanmar, featuring Google Login authentication, real-time cart updates, and a personalized user experience. The system uses live order data and locally stored user preferences to help restaurants understand customer behavior and improve their menu and services. Built with a mobile-first approach, the app is optimized for performance, low data usage, and scalability in emerging markets.
-,SUZI: AI Vision
-Python
-YOLOv8
-OpenCV
-SUZI is an advanced computer vision system developed to assist in real-time environment analysis. Leveraging the YOLOv8 architecture, it achieves high-speed object detection and classification.,
-
-SUZI AI KIOSK SUZI AI KIOSK
-It handles:
-
-AI-driven conversation logic using Google Gemini
-
-Live camera input with face detection and hand-gesture (pinch) control
-
-Session management based on user presence
-
-Voice input and speech synthesis (speech-to-text and text-to-speech)
-
-Dynamic media control, switching images or videos based on user queries
-
-Cloud and local JSON data loading for real-time information access
-
-The system is designed for kiosk and smart display environments, enabling touchless interaction through vision-based controls.
-It combines AI, computer vision, and cloud data into a single, real-time interactive platform.
-Google Cloud
-Tkinter
-MediaPipe
-Touchless, interactive campus assistant built with Python. Features Google Gemini and MediaPipe.
-
-
-,
-SUZI Cloud Chat
-It provides:
-
-Google Login authentication using Firebase
-
-A responsive, mobile-first UI built with Tailwind CSS
-
-Real-time chat and data interaction with cloud-hosted APIs
-
-User session handling (public users and authenticated users)
-
-Local storage usage for session state and user memory
-
-Progressive Web App (PWA) support via a service worker
-
-The frontend connects to both public and private cloud data sources, dynamically updating content based on authentication status.
-It is designed for low-latency, low-data environments, making it suitable for emerging markets and kiosk-style deployments.
-Firebase
-Web App
-Gemini
-Web-based student assistant powered by Firebase and Gemini. Features real-time cloud sync.
-
-,
-Drokatsu Award (Team Winner)
-
-I was a team winner of the Drokatsu programming competition in Western Japan, working in a four-member team to develop a practical and innovative software solution.
-
-Our team was evaluated on:
-
-Technical execution and system design
-
-Real-world usability and problem-solving ability
-
-Creativity and originality
-
-Effective team collaboration and delivery
-
-This experience demonstrates my ability to work closely within a small team, contribute technical solutions, communicate effectively, and deliver a complete product under real-world constraints.
-
-
-
-
-
-)
-
-            
-            [GOAL]
-            1. Answer questions about Kyaw using provided data.
-            2. Schedule appointments based on 'Available Slots'.
-            3. Maintain Context.
-            
-            [CRITICAL TIME]
-            Current JST Time: ${jstFull}
-            
-            [DATA SOURCES]
-            Available Slots: ${JSON.stringify(availabilityData || [])}
-            Existing Appointments: ${JSON.stringify(appointmentsData || [])}
-
-            [RULES]
-            1. Only book times listed in 'Available Slots'.
-            2. Ask for Name, Reason, and Time.
-            3. Output 'booking_action': null UNLESS user explicitly confirms.
-
-            [OUTPUT JSON STRICTLY]
-            {
-                "message": "Response text...",
-                "suggested_options": ["Option 1", "Option 2"], 
-                "booking_action": {
-                    "name": "Visitor Name",
-                    "time": "Time String",
-                    "reason": "Reason",
-                    "slot_id": "Unique ID from Available Slots" 
-                } (or null)
-            }
-        `;
-
+    async function callAI(userMessage, history) {
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            // Updated to call local server proxy instead of Google directly
+            const response = await fetch('/api/chat', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: `HISTORY:\n${history}\n\nUSER: ${userMessage}` }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: { responseMimeType: "application/json" }
+                    contents: [
+                        ...history.map(h => ({
+                            role: h.role === 'user' ? 'user' : 'model',
+                            parts: [{ text: h.content }]
+                        })),
+                        { role: 'user', parts: [{ text: userMessage }] }
+                    ]
                 })
             });
+
+            if (!response.ok) throw new Error("Backend response not ok");
 
             const data = await response.json();
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -1056,9 +922,10 @@ This experience demonstrates my ability to work closely within a small team, con
                 return { message: "I'm having trouble understanding. Could you repeat that?", booking_action: null };
             }
             return jsonResponse;
-        } catch (e) {
-            console.error("Gemini API Error:", e);
-            return { message: "I'm having trouble thinking right now. (Network Error)", booking_action: null };
+
+        } catch (err) {
+            console.error("AI Connection Error:", err);
+            return { message: "I'm having trouble connecting to the server right now.", booking_action: null };
         }
     }
 
@@ -1104,8 +971,12 @@ This experience demonstrates my ability to work closely within a small team, con
         }
         
         chatContainer.scrollTop = chatContainer.scrollHeight;
-        chatHistory.push(`${sender.toUpperCase()}: ${text}`);
-        if (chatHistory.length > 20) chatHistory.shift();
+        if(sender === 'user') {
+            chatHistory.push({ role: 'user', content: text });
+        } else {
+            chatHistory.push({ role: 'model', content: text });
+        }
+        if (chatHistory.length > 10) chatHistory.shift();
     }
 
     function showTypingIndicator() {
@@ -1140,8 +1011,7 @@ This experience demonstrates my ability to work closely within a small team, con
 
         try { await refreshData(); } catch(e) {}
         
-        const historyText = chatHistory.join('\n');
-        const decision = await callAI(inputVal, historyText);
+        const decision = await callAI(inputVal, chatHistory);
         
         removeTypingIndicator();
         isAiThinking = false;
