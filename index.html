@@ -894,40 +894,33 @@
     }
 
     async function callAI(userMessage, history) {
-        try {
-            // Updated to call local server proxy instead of Google directly
-            const response = await fetch('/api/chat', { 
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [
-                        ...history.map(h => ({
-                            role: h.role === 'user' ? 'user' : 'model',
-                            parts: [{ text: h.content }]
-                        })),
-                        { role: 'user', parts: [{ text: userMessage }] }
-                    ]
-                })
-            });
+    try {
+        // Since the server and html are on the same Render app, we use /api/chat
+        const response = await fetch('/api/chat', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: history.map(h => ({
+                    role: h.role === 'user' ? 'user' : 'model',
+                    parts: [{ text: h.content }]
+                })).concat([{ role: 'user', parts: [{ text: userMessage }] }])
+            })
+        });
 
-            if (!response.ok) throw new Error("Backend response not ok");
+        if (!response.ok) throw new Error("Server error");
 
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            const jsonResponse = extractJson(text);
-            
-            if (!jsonResponse) {
-                console.error("Failed to parse JSON:", text);
-                return { message: "I'm having trouble understanding. Could you repeat that?", booking_action: null };
-            }
-            return jsonResponse;
+        const data = await response.json();
+        // If data comes back as a string, parse it; otherwise use it as is
+        return typeof data === 'string' ? JSON.parse(data) : data;
 
-        } catch (err) {
-            console.error("AI Connection Error:", err);
-            return { message: "I'm having trouble connecting to the server right now.", booking_action: null };
-        }
+    } catch (err) {
+        console.error("AI Error:", err);
+        return { 
+            message: "I'm having trouble connecting to the server right now.", 
+            suggested_options: ["Try again"] 
+        };
     }
+}
 
     function parseMarkdown(text) {
         if (!text) return "";
