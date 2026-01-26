@@ -1,8 +1,8 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fetch = require('node-fetch');
+require('dotenv').config(); // Load environment variables
 
 const app = express();
 
@@ -11,12 +11,16 @@ const app = express();
 // --------------------
 app.use(cors());
 app.use(express.json());
+// Serve static files (HTML, CSS, JS, Images) from the current directory
 app.use(express.static(__dirname));
 
 // --------------------
 // CONFIG
 // --------------------
 const PORT = process.env.PORT || 3000;
+
+// Uses the new Gemini 2.5 Flash model
+const MODEL_NAME = "gemini-2.5-flash"; 
 
 const SYSTEM_PROMPT = `
 You are SUZI, the AI Secretary for Kyaw Khaing Tun.
@@ -34,6 +38,27 @@ FORMAT:
 `;
 
 // --------------------
+// MOCK DATABASE 
+// --------------------
+app.get('/data/availability', (req, res) => {
+    res.json({
+        data: [
+            { id: "slot1", time: "10:00 AM", available: true },
+            { id: "slot2", time: "2:00 PM", available: true }
+        ]
+    });
+});
+
+app.get('/data/appointments', (req, res) => {
+    res.json({ data: [] }); 
+});
+
+app.get('/data/config', (req, res) => {
+    res.json({ data: { maintenance_mode: false } });
+});
+
+
+// --------------------
 // AI CHAT ENDPOINT
 // --------------------
 app.post('/api/chat', async (req, res) => {
@@ -41,13 +66,16 @@ app.post('/api/chat', async (req, res) => {
     const { contents } = req.body;
     const API_KEY = process.env.GOOGLE_API_KEY;
 
+    // 1. Validate API Key
     if (!API_KEY) {
+      console.error("Error: GOOGLE_API_KEY is missing in environment variables.");
       return res.status(500).json({
-        message: "GOOGLE_API_KEY is missing.",
-        suggested_options: ["Fix server config"]
+        message: "Server Error: API Key missing.",
+        suggested_options: ["Check .env file"]
       });
     }
 
+    // 2. Validate Request Body
     if (!contents || !Array.isArray(contents)) {
       return res.status(400).json({
         message: "Invalid request format.",
@@ -55,16 +83,18 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
+    // 3. Call Google Gemini 2.5 Flash API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-            ...contents
-          ],
+          // System instructions are supported in Gemini 2.5
+          system_instruction: {
+            parts: [{ text: SYSTEM_PROMPT }]
+          },
+          contents: contents, 
           generationConfig: {
             temperature: 0.4,
             response_mime_type: "application/json"
@@ -74,14 +104,24 @@ app.post('/api/chat', async (req, res) => {
     );
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
+    // 4. Handle API Errors
+    if (!response.ok) {
+        console.error("Gemini API Error:", JSON.stringify(data, null, 2));
+        return res.json({ 
+            message: `I'm having trouble thinking right now. (${data.error?.message || "API Error"})`, 
+            suggested_options: ["Retry later"] 
+        });
+    }
+
+    // 5. Parse Response
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     let parsed;
     try {
       parsed = JSON.parse(text);
-    } catch {
+    } catch (e) {
       parsed = {
-        message: text || "Empty AI response.",
+        message: text || "I didn't get that.",
         suggested_options: ["Retry"]
       };
     }
@@ -89,7 +129,7 @@ app.post('/api/chat', async (req, res) => {
     res.json(parsed);
 
   } catch (error) {
-    console.error("AI ERROR:", error);
+    console.error("SERVER ERROR:", error);
     res.status(500).json({
       message: "Suzi is sleeping right now 😴",
       suggested_options: ["Retry"]
@@ -108,5 +148,6 @@ app.get('*', (req, res) => {
 // START SERVER
 // --------------------
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`✨ Using Model: ${MODEL_NAME}`);
 });
